@@ -2,7 +2,6 @@ import altair as alt
 import yfinance as yf
 import streamlit as st
 import plotly.graph_objects as go
-from streamlit_searchbox import st_searchbox
 
 # ----------------------------------------------------------------------------------------------- #
 
@@ -14,7 +13,7 @@ def fetch_stock_info(symbol):
 @st.cache_data
 def fetch_quartely_financials(symbol):
     stock = yf.Ticker(symbol)
-    return stock.quartely_financials.T
+    return stock.quarterly_financials.T
 
 @st.cache_data
 def fetch_annual_financials(symbol):
@@ -30,20 +29,33 @@ def fetch_weekly_price_history(symbol):
 
 st.title('Stock Market Dashboard')
 
-symbols = ['MSFT', 'GOOGL', 'AMZN', 'TSLA']
+symbols = ['AAPL', 'AMZN', 'GOOGL', 'MSFT', 'NVDA', 'META', 'TSLA']
+
 symbol = st.selectbox('Nome da ação:', symbols)
 
 info = fetch_stock_info(symbol)
 
-st.title(info["longName"])
-st.subheader(f'Market Cap: $ {info["marketCap"]:,}')
-st.subheader(f'Setor: {info["sector"]}')
+st.title(info['longName'])
+st.subheader(f'Market Cap: $ {info['marketCap']:,}')
+st.subheader(f'Setor: {info['sector']}')
 
 # ----------------------------------------------------------------------------------------------- #
 
 weekly_price_history = fetch_weekly_price_history(symbol)
 
 st.header('Histórico de preço semanal')
+
+st.markdown('Registro dos preços de uma ação ao longo de semanas, incluindo informações como:');
+st.markdown(
+    '''
+    - Preço de Abertura (Open Price): O preço da ação no início da semana.
+    - Preço de Fechamento (Close Price): O preço da ação no final da semana.
+    - Máxima da Semana (High Price): O maior preço alcançado pela ação durante a semana.
+    - Mínima da Semana (Low Price): O menor preço registrado na semana.
+    - Volume de Negociação (Trading Volume): A quantidade total de ações negociadas na semana.
+    '''
+);
+st.markdown('Esse histórico é útil para análise técnica e fundamentalista, ajudando investidores a identificar tendências de mercado e tomar decisões de compra ou venda.');
 
 weekly_price_history = weekly_price_history.rename_axis('Date').reset_index()
 candle_stick_chart = go.Figure(
@@ -55,3 +67,44 @@ candle_stick_chart = go.Figure(
 )
 
 st.plotly_chart(candle_stick_chart, use_container_width=True)
+
+# ----------------------------------------------------------------------------------------------- #
+
+st.header('Faturamento')
+
+st.markdown('**Total Revenue (Receita Total)**: É o valor bruto que uma empresa gera com suas operações, incluindo vendas de produtos e serviços. Ele não considera nenhum custo ou despesa, apenas a receita gerada antes de qualquer dedução.')
+st.markdown('**Net Income (Lucro Líquido)**: É o que sobra depois que a empresa deduz todas as suas despesas da receita total, incluindo custos operacionais, impostos, juros e outras despesas. Representa o lucro real que a empresa teve em um determinado período e é um indicador-chave da sua rentabilidade.')
+
+quartely_financials = fetch_quartely_financials(symbol)
+anual_financials = fetch_annual_financials(symbol)
+
+period = st.segmented_control(label='Período', options=['Trimestral', 'Anual'], default='Trimestral')
+
+if (period == 'Trimestral'):
+    quartely_financials = quartely_financials.rename_axis('Quarter').reset_index()
+    quartely_financials['Quarter'] = quartely_financials['Quarter'].astype(str)
+    revenue_chart = alt.Chart(quartely_financials).mark_bar().encode(
+        x='Quarter:O',
+        y='Total Revenue'
+    )
+    st.altair_chart(revenue_chart, use_container_width=True)
+    net_income_chart = alt.Chart(quartely_financials).mark_bar(color='green').encode(
+        x='Quarter:O',
+        y='Net Income'
+    )
+    st.altair_chart(net_income_chart, use_container_width=True)
+
+if (period == 'Anual'):
+    anual_financials = anual_financials.rename_axis('Year').reset_index()
+    anual_financials['Year'] = anual_financials['Year'].astype(str).transform(lambda year: year.split('-')[0])
+    revenue_chart = alt.Chart(anual_financials).mark_bar().encode(
+        x='Year:O',
+        y='Total Revenue'
+    )
+    st.altair_chart(revenue_chart, use_container_width=True)
+    net_income_chart = alt.Chart(anual_financials).mark_bar(color='green').encode(
+        x='Year:O',
+        y='Net Income'
+    )
+    st.altair_chart(net_income_chart, use_container_width=True)
+
