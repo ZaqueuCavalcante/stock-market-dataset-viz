@@ -28,6 +28,7 @@ def fetch_weekly_price_history(symbol):
 
 # ----------------------------------------------------------------------------------------------- #
 
+st.set_page_config(page_title='Stock Market Dashboard')
 st.title('Stock Market Dashboard')
 
 symbols = ['AAPL', 'AMZN', 'GOOGL', 'MSFT', 'NVDA', 'META', 'TSLA']
