@@ -2,6 +2,7 @@ import altair as alt
 import yfinance as yf
 import streamlit as st
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # ----------------------------------------------------------------------------------------------- #
 
@@ -48,25 +49,46 @@ st.header('Histórico de preço semanal')
 st.markdown('Registro dos preços de uma ação ao longo de semanas, incluindo informações como:');
 st.markdown(
     '''
-    - Preço de Abertura (Open Price): O preço da ação no início da semana.
-    - Preço de Fechamento (Close Price): O preço da ação no final da semana.
-    - Máxima da Semana (High Price): O maior preço alcançado pela ação durante a semana.
-    - Mínima da Semana (Low Price): O menor preço registrado na semana.
-    - Volume de Negociação (Trading Volume): A quantidade total de ações negociadas na semana.
+    - **Preço de Abertura (Open Price)**: O preço da ação no início da semana.
+    - **Preço de Fechamento (Close Price)**: O preço da ação no final da semana.
+    - **Máxima da Semana (High Price)**: O maior preço alcançado pela ação durante a semana.
+    - **Mínima da Semana (Low Price)**: O menor preço registrado na semana.
+    - **Volume de Negociação (Trading Volume)**: A quantidade total de ações negociadas na semana.
     '''
 );
 st.markdown('Esse histórico é útil para análise técnica e fundamentalista, ajudando investidores a identificar tendências de mercado e tomar decisões de compra ou venda.');
 
 weekly_price_history = weekly_price_history.rename_axis('Date').reset_index()
-candle_stick_chart = go.Figure(
-    data=[go.Candlestick(x=weekly_price_history['Date'],
+
+candlesticks = go.Candlestick(
+    showlegend=False,
+    x=weekly_price_history['Date'],
     open=weekly_price_history['Open'],
     low=weekly_price_history['Low'],
     high=weekly_price_history['High'],
-    close=weekly_price_history['Close'])]
+    close=weekly_price_history['Close'])
+
+volume_bars = go.Bar(
+    showlegend=False,
+    x=weekly_price_history['Date'],
+    y=weekly_price_history['Volume'],
+    marker={
+        "color": "rgba(128,128,128,0.5)",
+    }
 )
 
-st.plotly_chart(candle_stick_chart, use_container_width=True)
+fig = go.Figure(candlesticks)
+fig = make_subplots(specs=[[{"secondary_y": True}]])
+fig.add_trace(candlesticks, secondary_y=True)
+fig.add_trace(volume_bars, secondary_y=False)
+fig.update_layout(
+    title="Histórico de preço semanal",
+    height=600,
+)
+fig.update_yaxes(title="Preço $", secondary_y=True, showgrid=True)
+fig.update_yaxes(title="Volume $", secondary_y=False, showgrid=False)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # ----------------------------------------------------------------------------------------------- #
 
@@ -107,4 +129,3 @@ if (period == 'Anual'):
         y='Net Income'
     )
     st.altair_chart(net_income_chart, use_container_width=True)
-
